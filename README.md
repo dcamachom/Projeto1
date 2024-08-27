@@ -1,6 +1,7 @@
 ## Projecto 1 - Sistemas Distribuidos
 
 Joel Antonio Lopez Cota
+
 Daniela Alejandra Camacho Molano
 
 ## Ideas de solución 
