@@ -8,19 +8,24 @@ Daniela Alejandra Camacho Molano
 
 Hacer menu por consola y que tenga opciones para que el usuario mande los inputs segun el escenario que quiera modelar. Mientras se realiza el procedimiento se hacen prints en consola para informarle al usuario como se estan comportando los servidores y cuando termine mostrar las metricas obtenidas.
 
+Hay que usar threads cada que se genera una nueva solicitud y debe haber un reloj para contar los diferentes tiempos.
+
 ### Clases
 1. Balanceador: id,Politica
 2. Solicitud: id
 3. Servidor: id, fila de solicitudes, tiempo procesamiento, estado
 4. Main: para hacer el menu
-
-
-### Preguntas:
-1. Como se maneja lo de tiempo de respuesta. Depende de la solicutd y su tiempo de CPU y I/O, pero también depende del servidor?
-2. Se puede hacer por consola o debe tener interfaz?
+5. GeneradorSolicitudes:
 
 ## Menú:
 
-1. Escoga el tipo de balanceador (Aleatoria, Round Robin, fila mas corta)
-2. Escoga el patrón de trafico (Constante, explosión)
-3. Digite el número de solicitudes
+1. Generar solicitudes: escoger el rate (lambda)
+2. Realizar balanceamento:
+    - Escoga el tipo de balanceador (Aleatoria, Round Robin, fila mas corta)
+    - Escoga el archivo de las solicitudes.
+
+
+Hacer main en balanceador, el hilo principal es el balanceador
+se crean 3 hilos más, uno por cada servidor.
+Las solicutudes se van mandnado a las filas de los servidores y el sevdiro va procesando al mismo tiempo.
+Cuando no hayan más solicitudes se acaba el programa (se pone un contador para el timepo total).

@@ -1,13 +1,11 @@
 public class Solicitud {
 
     public int tamSolicitud;
-    public int tempoIO;
-    public int tempoCPU;
+    public int tempoTot;
 
-    public Solicitud(int tamSolicitud, int tempoCPU, int tempoIO){
+    public Solicitud(int tamSolicitud, int tempoTot){
         this.tamSolicitud=tamSolicitud;
-        this.tempoCPU=tempoCPU;
-        this.tempoIO=tempoIO;
+        this.tempoTot=tempoTot;
     }
     
 }

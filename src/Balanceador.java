@@ -20,16 +20,14 @@ public class Balanceador {
     
     public void escolhaAletoria(){
 
-        Solicitud solicitudActual= null;
         for (int i=0;i<solicitudes.size();i++){
             int randomServer= (int) (Math.random() * 3) + 1;
-            solicitudActual=solicitudes.get(i);
             if(randomServer==1){
-                servidor1.procesarSolicitud(solicitudActual);
+                
             }else if(randomServer==2){
-                servidor2.procesarSolicitud(solicitudActual);
+                
             }else{
-                servidor3.procesarSolicitud(solicitudActual);
+                
             }
         } 
 
@@ -38,15 +36,13 @@ public class Balanceador {
     public void roundRobin(){
 
         int cont=1;
-        Solicitud solicitudActual= null;
         for (int i=0;i<solicitudes.size();i++){
-            solicitudActual=solicitudes.get(i);
             if(cont==1){
-                servidor1.procesarSolicitud(solicitudActual);
+                
             }else if(cont==2){
-                servidor2.procesarSolicitud(solicitudActual);
+                
             }else{
-                servidor3.procesarSolicitud(solicitudActual);
+                
             }
 
             if (cont==3){
