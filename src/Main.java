@@ -1,24 +1,26 @@
-import java.util.Random;
 import java.util.Scanner;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
-// Universidade Estadual de Campinas
-// Joel Antonio Lopez Cota 290818
-// Daniela Alejandra Camacho Molano 290801
-// 11/09/2002
+// Universidad Estadual de Campinas
+// Joel Antonio Lopez Cota - 290818
+// Daniela Alejandra Camacho Molano - 290801
 
-// Clase principal para simular el tráfico de solicitudes
 public class Main {
     public static void main(String[] args) {
-        Balancer loadBalancer; 
+        Balancer loadBalancer;
         Scanner scanner = new Scanner(System.in);
         System.out.println("Seleccione la política de balanceo de carga: ");
         System.out.println("1. Escolha Aleatória");
         System.out.println("2. Round Robin");
         System.out.println("3. Fila Mais Curta");
         String policyOption = scanner.nextLine();
-
         String policy = "";
+
         switch (policyOption) {
             case "1":
                 policy = "escolha aleatória";
@@ -34,45 +36,47 @@ public class Main {
                 policy = "round robin";
                 break;
         }
-        loadBalancer =new Balancer(3,policy);
-        loadBalancer.startServers();
-        
+
+        List<Server> servers = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            Server server = new Server(i);
+            servers.add(server);
+            new Thread(server).start();
+        }
+
+        loadBalancer = new Balancer(servers, policy);
+
         Random random = new Random();
-
-        // Generación de solicitudes
-        for (int i = 1; i <= 20; i++) {
-            // Asigna tiempos de procesamiento basados en el tipo
-            int cpuTime = 0;
-            int ioTime = 0;
-            
-            cpuTime = random.nextInt(500) + 200; // 200ms a 700ms
-            ioTime = random.nextInt(2000) + 1000; // 1000ms a 3000ms
-
-            loadBalancer.distributeRequest(cpuTime, ioTime);
+        ExecutorService requestExecutor = Executors.newCachedThreadPool(); // Pool de hilos para concurrencia
+        int id= 1;
+       // Generar lotes de 2 a 3 solicitudes
+        for (int i = 1; i <= 5; i ++) {
+            int numberOfRequests = random.nextInt(2)+ 2; // Generar 2 o 3 solicitudes por lote
+            for (int j = 0; j < numberOfRequests; j++) {
+                int finalId=id++;
+                requestExecutor.submit(() -> {
+                    int cpuTime = random.nextInt(500) + 200;  // 200ms a 700ms
+                    int ioTime = random.nextInt(2000) + 1000; // 1000ms a 3000ms
+                    loadBalancer.assignRequest(new Request(finalId,cpuTime, ioTime));
+                });
+            }
             loadBalancer.printServerStatus();
 
-            // Intervalo aleatorio entre solicitudes: 100ms a 1000ms
-            int arrivalInterval = random.nextInt(900) + 100;
+
+            // Simular intervalo aleatorio entre lotes
+            int arrivalInterval = random.nextInt(900) + 100; // Intervalo aleatorio: 100ms a 1000ms
             try {
                 TimeUnit.MILLISECONDS.sleep(arrivalInterval);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
-
-        // Espera a que todas las solicitudes sean procesadas
-        loadBalancer.shutdownServers();
-
-        // Permite tiempo para que los servidores terminen
-        try {
-            TimeUnit.SECONDS.sleep(10);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // Imprime las métricas
-        Metrics.printMetrics();
-
+        // Esperar hasta que todas las solicitudes sean procesadas
+        loadBalancer.waitForCompletion();
+        
+        // Mostrar métricas finales
+        loadBalancer.printMetrics();
         scanner.close();
+        System.exit(0); // Termina el programa
     }
 }

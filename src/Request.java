@@ -1,54 +1,40 @@
-import java.time.Instant;
+// Universidad Estadual de Campinas
+// Joel Antonio Lopez Cota - 290818
+// Daniela Alejandra Camacho Molano - 290801
 
+/**
+ * Clase que representa una solicitud en el sistema.
+ */
 public class Request {
-    private int idRequest;
-    private int cpuTime; // en ms
-    private int ioTime; // en ms
-    private Instant arrivalTime;
-    private Instant startTime;
-    private Instant endTime;
+    private int id;
+    private int cpuTime;
+    private int ioTime;
 
-    public Request(int idRequest, int cpuTime, int ioTime) {
-        this.idRequest = idRequest;
+    /**
+     * Constructor de la clase Request.
+     *
+     * @param id       El identificador de la solicitud.
+     * @param cpuTime  El tiempo que la solicitud requiere de CPU.
+     * @param ioTime   El tiempo que la solicitud requiere de I/O.
+     */
+    public Request(int id, int cpuTime, int ioTime) {
         this.cpuTime = cpuTime;
         this.ioTime = ioTime;
-        this.arrivalTime = Instant.now();
+        this.id = id;
     }
 
-    public int getRequestId() {
-        return idRequest;
+    /**
+     * Procesa la solicitud y determina el tiempo que toma, ya sea basado en 
+     * el tiempo de CPU o el tiempo de I/O, dependiendo de cuál sea mayor.
+     *
+     * @return El tiempo que se tarda en procesar la solicitud.
+     */
+    public long process() {
+        return cpuTime > ioTime ? cpuTime : ioTime; 
     }
 
-    public int getCpuTime() {
-        return cpuTime;
-    }
-
-    public int getIoTime() {
-        return ioTime;
-    }
-
-    public Instant getArrivalTime() {
-        return arrivalTime;
-    }
-
-    public Instant getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(Instant startTime) {
-        this.startTime = startTime;
-    }
-
-    public Instant getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(Instant endTime) {
-        this.endTime = endTime;
-    }
-
-    public long getResponseTime() {
-        return endTime.toEpochMilli() - arrivalTime.toEpochMilli();
+    @Override
+    public String toString() {
+        return "Request{id= " + id + ", cpuTime=" + cpuTime + ", ioTime=" + ioTime + "}";
     }
 }
-

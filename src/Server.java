@@ -1,69 +1,136 @@
-import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Server implements Runnable{
-    private final int serverId;
-    private final BlockingQueue<Request> requestQueue;
-    private volatile boolean isRunning;
-    private volatile boolean isBusy;
+// Universidad Estadual de Campinas
+// Joel Antonio Lopez Cota - 290818
+// Daniela Alejandra Camacho Molano - 290801
 
-    public Server(int serverId) {
-        this.serverId = serverId;
-        this.requestQueue = new LinkedBlockingQueue<>();
-        this.isRunning = true;
-        this.isBusy = false;
+
+/**
+ * Clase que representa un servidor en el sistema que procesa solicitudes.
+ */
+public class Server implements Runnable {
+    private BlockingQueue<Request> requestQueue = new LinkedBlockingQueue<>();
+    private int id;
+    private boolean isBusy = false;
+    private long totalProcessedRequests = 0;
+    private long totalProcessingTime = 0;
+    private long totalResponseTime = 0;
+    private boolean isRunning = true;
+
+    /**
+     * Constructor que inicializa un servidor con un ID.
+     * 
+     * @param id Identificador del servidor.
+     */
+    public Server(int id) {
+        this.id = id;
     }
 
-    public int getServerId() {
-        return serverId;
+    /**
+     * Método para agregar una solicitud a la cola del servidor.
+     * 
+     * @param request La solicitud a agregar a la cola.
+     */
+    public void addRequest(Request request) {
+        requestQueue.add(request);
     }
 
+    /**
+     * Método que devuelve el ID del servidor.
+     * 
+     * @return ID del servidor.
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * Método que devuelve el tamaño actual de la cola de solicitudes.
+     * 
+     * @return Tamaño de la cola de solicitudes.
+     */
     public int getQueueSize() {
         return requestQueue.size();
     }
 
+    /**
+     * Método que indica si el servidor está ocupado procesando solicitudes.
+     * 
+     * @return true si el servidor está ocupado, false en caso contrario.
+     */
     public boolean isBusy() {
         return isBusy;
     }
 
-    public void addRequest(Request request) {
-        try {
-            requestQueue.put(request);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    /**
+     * Método que devuelve el total de solicitudes procesadas por el servidor.
+     * 
+     * @return Total de solicitudes procesadas.
+     */
+    public long getTotalProcessedRequests() {
+        return totalProcessedRequests;
     }
 
-    public void shutdown() {
-        isRunning = false;
+    /**
+     * Método que devuelve el tiempo total de procesamiento de las solicitudes.
+     * 
+     * @return Tiempo total de procesamiento.
+     */
+    public long getTotalProcessingTime() {
+        return totalProcessingTime;
     }
 
+    /**
+     * Método que devuelve el tiempo total de respuesta de las solicitudes procesadas.
+     * 
+     * @return Tiempo total de respuesta.
+     */
+    public long getTotalResponseTime() {
+        return totalResponseTime;
+    }
+
+    /**
+     * Método que ejecuta el hilo del servidor para procesar las solicitudes en la cola.
+     */
     @Override
     public void run() {
-        while (isRunning || !requestQueue.isEmpty()) {
+        while (isRunning) {
             try {
-                Request request = requestQueue.poll();
-                if (request != null) {
-                    isBusy = true;
-                    request.setStartTime(Instant.now());
-                    // Simula el tiempo de CPU
-                    Thread.sleep(request.getCpuTime());
-                    // Simula el tiempo de I/O
-                    Thread.sleep(request.getIoTime());
-                    request.setEndTime(Instant.now());
-                    Metrics.recordRequest(request);
-                    System.out.println("Servidor " + serverId + " procesó la solicitud " + request.getRequestId() +
-                            ", CPU: " + request.getCpuTime() +"ms, I/O: " + request.getIoTime() + "ms).");
-                    isBusy = false;
-                } else {
-                    // Si no hay solicitudes, el servidor está inactivo
-                    isBusy = false;
-                    Thread.sleep(100); // Evita un ciclo muy rápido
-                }
+                Request request = requestQueue.take();
+                long startTime = System.currentTimeMillis();
+
+                isBusy = true;
+                totalProcessedRequests++;
+                long processingTime = request.process();
+                totalProcessingTime += processingTime;
+
+                Thread.sleep(processingTime);
+
+                long endTime = System.currentTimeMillis();
+                totalResponseTime += (endTime - startTime);
+
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            } finally {
+                isBusy = false;
             }
         }
+    }
+
+    /**
+     * Método que calcula y devuelve el tiempo promedio de respuesta de las solicitudes.
+     * 
+     * @return Tiempo promedio de respuesta.
+     */
+    public double getAverageResponseTime() {
+        return totalProcessedRequests == 0 ? 0 : (double) totalResponseTime / totalProcessedRequests;
+    }
+
+    /**
+     * Método para detener el servidor.
+     */
+    public void shutdown() {
+        isRunning = false;
     }
 }

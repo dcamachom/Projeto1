@@ -1,84 +1,148 @@
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 
+// Universidad Estadual de Campinas
+// Joel Antonio Lopez Cota - 290818
+// Daniela Alejandra Camacho Molano - 290801
+
+
+/**
+ * La clase Balancer es responsable de la asignación de solicitudes a servidores
+ * basándose en diferentes políticas de balanceo de carga.
+ */
 public class Balancer {
-    private final Server[] servers;
-    private final String policy;
-    private int currentServerIndex;
-    private final Random random;
-    private final AtomicInteger requestIdGenerator;
-
-    public Balancer(int numberOfServers, String policy) {
-        this.servers = new Server[numberOfServers];
-        for (int i = 0; i < numberOfServers; i++) {
-            servers[i] = new Server(i + 1);
-        }
-        this.policy = policy.toLowerCase();
-        this.currentServerIndex = 0;
-        this.random = new Random();
-        this.requestIdGenerator = new AtomicInteger(1);
+    private List<Server> servers; 
+    private String policy; 
+    private Random random = new Random(); 
+    private int roundRobinIndex = 0;
+    private final Object lock = new Object(); 
+    
+    /**
+     * Constructor de la clase Balancer.
+     * 
+     * @param servers La lista de servidores a los que se les asignarán las solicitudes.
+     * @param policy La política de balanceo de carga que se utilizará.
+     */
+    public Balancer(List<Server> servers, String policy) {
+        this.servers = servers;
+        this.policy = policy.toLowerCase(); // Convertir la política a minúsculas para una comparación uniforme.
     }
 
-    public Server[] getServers() {
-        return servers;
-    }
-
-    public void startServers() {
-        for (Server server : servers) {
-            new Thread(server).start();
-        }
-    }
-
-    public void shutdownServers() {
-        for (Server server : servers) {
-            server.shutdown();
-        }
-    }
-
-    public void distributeRequest(int cpuTime, int ioTime) {
-        Request request = new Request(requestIdGenerator.getAndIncrement(), cpuTime, ioTime);
-        Server selectedServer = selectServer();
-        selectedServer.addRequest(request);
-        System.out.println("Solicitud " + request.getRequestId() + " asignada al Servidor " + selectedServer.getServerId());
-    }
-
-    private Server selectServer() {
+    /**
+     * Asigna una solicitud a un servidor según la política de balanceo de carga.
+     * 
+     * @param request La solicitud a ser asignada.
+     */
+    public void assignRequest(Request request) {
         switch (policy) {
-            case "round robin":
-                Server serverRR = servers[currentServerIndex];
-                currentServerIndex = (currentServerIndex + 1) % servers.length;
-                return serverRR;
             case "escolha aleatória":
-                return servers[random.nextInt(servers.length)];
+                assignRandom(request); 
+                break;
+            case "round robin":
+                assignRoundRobin(request); 
+                break;
             case "fila mais curta":
-                Server leastLoaded = servers[0];
-                for (Server server : servers) {
-                    if (server.getQueueSize() < leastLoaded.getQueueSize()) {
-                        leastLoaded = server;
-                    }
-                }
-                return leastLoaded;
+                assignShortestQueue(request);
+                break;
             default:
-                // Por defecto, Round Robin
-                Server defaultServer = servers[currentServerIndex];
-                currentServerIndex = (currentServerIndex + 1) % servers.length;
-                return defaultServer;
+                assignRoundRobin(request); 
+                break;
         }
     }
 
+    /**
+     * Asigna una solicitud a un servidor de manera aleatoria.
+     * 
+     * @param request La solicitud a ser asignada.
+     */
+    private void assignRandom(Request request) {
+        int serverIndex = random.nextInt(servers.size()); 
+        servers.get(serverIndex).addRequest(request);
+        logRequestAssignment(serverIndex, request); 
+    }
+
+    /**
+     * Asigna una solicitud a un servidor utilizando la política de Round Robin.
+     * 
+     * @param request La solicitud a ser asignada.
+     */
+    private void assignRoundRobin(Request request) {
+        synchronized (lock) { 
+            servers.get(roundRobinIndex).addRequest(request); 
+            logRequestAssignment(roundRobinIndex, request); 
+            roundRobinIndex = (roundRobinIndex + 1) % servers.size();
+        }
+    }
+
+    /**
+     * Asigna una solicitud al servidor con la cola más corta.
+     * 
+     * @param request La solicitud a ser asignada.
+     */
+    private void assignShortestQueue(Request request) {
+        Server shortestQueueServer = servers.stream()
+                .min((s1, s2) -> Integer.compare(s1.getQueueSize(), s2.getQueueSize()))
+                .orElse(servers.get(0)); 
+        shortestQueueServer.addRequest(request);
+        logRequestAssignment(shortestQueueServer.getId(), request); 
+    }
+    /**
+     * Registra la asignación de una solicitud a un servidor.
+     * 
+     * @param serverIndex El índice del servidor al que se le asignó la solicitud.
+     * @param request La solicitud asignada.
+     */
+    private void logRequestAssignment(int serverIndex, Request request) {
+        System.out.println("Assigned " + request + " to Server " + serverIndex);
+    }
+
+    /**
+     * Imprime el estado actual de todos los servidores.
+     */
     public void printServerStatus() {
         System.out.println("\nEstado actual de los servidores:");
-        System.out.println("+------------+--------------+--------------+");
-        System.out.println("| Servidor   | Estado       | En cola      |");
-        System.out.println("+------------+--------------+--------------+");
         for (Server server : servers) {
-            String estado = server.isBusy() ? "Ocupado" : "Inactivo";
-            System.out.printf("| %-10d | %-12s | %-12d |\n",
-                    server.getServerId(),
-                    estado,
-                    server.getQueueSize());
+            String estado = server.isBusy() ? "Ocupado" : "Inactivo"; 
+            System.out.printf("Servidor %d: Estado: %s, En cola: %d\n", server.getId(), 
+                                estado, server.getQueueSize());
         }
-        System.out.println("+------------+--------------+--------------+");
+    }
+
+    /**
+     * Imprime las métricas finales de procesamiento de solicitudes de todos los servidores.
+     */
+    public void printMetrics() {
+        long totalRequestsProcessed = 0; 
+        long totalProcessingTime = 0; 
+
+        System.out.println("\nMétricas finales:");
+        for (Server server : servers) {
+            totalRequestsProcessed += server.getTotalProcessedRequests(); 
+            totalProcessingTime += server.getTotalProcessingTime();
+            System.out.printf("Servidor %d procesó %d solicitudes\n", server.getId(), server.getTotalProcessedRequests());
+            System.out.printf("Tiempo promedio de respuesta: %.2f ms\n", server.getAverageResponseTime());
+        }
+
+        double averageProcessingTime = totalProcessingTime / (double) totalRequestsProcessed;
+        System.out.printf("Throughput del sistema: %.2f solicitudes/segundo\n", (double) totalRequestsProcessed / (totalProcessingTime / 1000.0));
+        System.out.printf("Tiempo promedio de procesamiento: %.2f ms\n", averageProcessingTime);
+    
+        }
+
+    /**
+     * Espera hasta que todas las colas de los servidores estén vacías.
+     */
+    public void waitForCompletion() {
+        boolean allQueuesEmpty;
+        do {
+            allQueuesEmpty = servers.stream().allMatch(server -> server.getQueueSize() == 0); // Verifica si todas las colas están vacías.
+            printServerStatus(); 
+            try {
+                Thread.sleep(1000); 
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); 
+            }
+        } while (!allQueuesEmpty);
+    
     }
 }
-
