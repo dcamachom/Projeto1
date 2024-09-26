@@ -1,31 +1,18 @@
 ## Projecto 1 - Sistemas Distribuidos
 
-Joel Antonio Lopez Cota
+Joel Antonio Lopez Cota - 290818
 
-Daniela Alejandra Camacho Molano
+Daniela Alejandra Camacho Molano - 290801
 
-## Ideas de solución 
-
-Hacer menu por consola y que tenga opciones para que el usuario mande los inputs segun el escenario que quiera modelar. Mientras se realiza el procedimiento se hacen prints en consola para informarle al usuario como se estan comportando los servidores y cuando termine mostrar las metricas obtenidas.
-
-Hay que usar threads cada que se genera una nueva solicitud y debe haber un reloj para contar los diferentes tiempos.
-
-### Clases
-1. Balanceador: id,Politica
-2. Solicitud: id
-3. Servidor: id, fila de solicitudes, tiempo procesamiento, estado
-4. Main: para hacer el menu
-5. GeneradorSolicitudes:
-
-## Menú:
-
-1. Generar solicitudes: escoger el rate (lambda)
-2. Realizar balanceamento:
-    - Escoga el tipo de balanceador (Aleatoria, Round Robin, fila mas corta)
-    - Escoga el archivo de las solicitudes.
-
-
-Hacer main en balanceador, el hilo principal es el balanceador
-se crean 3 hilos más, uno por cada servidor.
-Las solicutudes se van mandnado a las filas de los servidores y el sevdiro va procesando al mismo tiempo.
-Cuando no hayan más solicitudes se acaba el programa (se pone un contador para el timepo total).
+Si desea compilar el codigo por medio de la terminal, siga
+los siguientes pasos:
+1) Ubique el archivo Main.java en el directorio correspon-
+diente
+2) Cree una nueva terminar y navegue al directorio raiz del
+proyecto
+javac *.java
+3) Una vez compilado, ejecute el siguiente comando para
+iniciar el programa:
+java main
+Siga las instrucciones del menu que saldra en la terminal
+para que el codigo se ejecute
